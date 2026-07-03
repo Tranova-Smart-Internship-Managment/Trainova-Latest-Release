@@ -1,0 +1,6 @@
+{
+  "name": "Trainova",
+  "description": "منصة ترينوفا لتنسيق وإدارة التدريب الميداني لجامعات قطاع غزة (الجامعة الإسلامية، جامعة الأزهر، جامعة الأقصى) بالتعاون مع الشركات والمؤسسات المحلية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
