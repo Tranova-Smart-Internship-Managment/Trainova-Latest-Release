@@ -122,7 +122,7 @@ export default function SupervisorDashboard({
     }
   }, [activeConversation.length, activeChatPartner?.id, activeTab]);
 
-  // Handle Report Review
+  // Handle report review
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedReportId || !feedbackText) return;
