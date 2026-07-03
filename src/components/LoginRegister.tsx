@@ -291,7 +291,7 @@ export default function LoginRegister({
         if (!cleanStudentId) {
           setErrorMsg(
             lang === 'ar'
-              ? 'يرجى إدخال الرقم الجامعي الخاص بك.'
+              ? 'الرجاء إدخال الرقم الجامعي الخاص بك.'
               : 'Please enter your university ID.'
           );
           return;
