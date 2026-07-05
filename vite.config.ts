@@ -12,10 +12,11 @@ export default defineConfig(() => {
       },
     },
     server: {
-       
       hmr: process.env.DISABLE_HMR !== 'true',
-      
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    },
+    preview: {
+      allowedHosts: ['trainova-fornt.apps.taqat.academy'],
     },
   };
 });
