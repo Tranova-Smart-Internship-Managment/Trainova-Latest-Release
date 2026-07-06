@@ -22,6 +22,83 @@ interface StudentDashboardProps {
   onSendMessage: (receiverId: string, receiverRole: any, content: string) => void;
 }
 
+const renderFormattedAIResponse = (text: string) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-3 text-sm text-slate-700 leading-relaxed font-sans text-right" dir="rtl">
+      {lines.map((line, idx) => {
+        let trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-1" />;
+        
+        // Handle markdown headers like ### or ##
+        if (trimmed.startsWith('###')) {
+          return (
+            <h4 key={idx} className="text-xs md:text-sm font-extrabold text-indigo-900 mt-4 mb-2 border-r-4 border-indigo-500 pr-2.5 py-0.5 bg-indigo-50/50 rounded-l">
+              {trimmed.replace(/^###\s*/, '').replace(/\*\*/g, '')}
+            </h4>
+          );
+        }
+        if (trimmed.startsWith('##')) {
+          return (
+            <h3 key={idx} className="text-sm md:text-base font-extrabold text-indigo-950 mt-5 mb-2.5 border-r-4 border-indigo-600 pr-3 py-1 bg-indigo-50/80 rounded-l">
+              {trimmed.replace(/^##\s*/, '').replace(/\*\*/g, '')}
+            </h3>
+          );
+        }
+
+        // Handle numbered lists or list points: "1. **Title**:"
+        const listMatch = trimmed.match(/^(\d+\.|\*|-)\s*(.*)/);
+        if (listMatch) {
+          const bullet = listMatch[1];
+          let content = listMatch[2];
+          
+          // Check for bold parts in content e.g. **something**
+          const boldMatch = content.match(/^\*\*(.*?)\*\*(.*)/);
+          if (boldMatch) {
+            return (
+              <div key={idx} className="flex items-start gap-2 mt-2 mr-2 bg-indigo-50/20 p-2 rounded-lg border border-indigo-100/30">
+                <span className="text-indigo-600 font-bold mt-0.5 select-none">•</span>
+                <p className="flex-1 text-xs md:text-sm">
+                  <strong className="text-indigo-950 font-bold font-sans block mb-0.5">{boldMatch[1]}</strong>
+                  <span className="text-slate-600">{boldMatch[2]}</span>
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div key={idx} className="flex items-start gap-2 mt-2 mr-2 bg-indigo-50/10 p-2 rounded-lg">
+              <span className="text-indigo-500 mt-0.5 select-none">•</span>
+              <p className="flex-1 text-xs md:text-sm text-slate-600">{content.replace(/\*\*/g, '')}</p>
+            </div>
+          );
+        }
+
+        // Handle random inline bolding **text**
+        if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+          return (
+            <p key={idx} className="font-extrabold text-indigo-950 mt-3 mb-1 text-xs md:text-sm">
+              {trimmed.replace(/\*\*/g, '')}
+            </p>
+          );
+        }
+
+        // Check if there is some other bolding inside the text
+        if (trimmed.includes('**')) {
+          const parts = trimmed.split('**');
+          return (
+            <p key={idx} className="text-xs md:text-sm text-slate-600 leading-relaxed">
+              {parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="text-indigo-950 font-bold">{part}</strong> : part)}
+            </p>
+          );
+        }
+
+        return <p key={idx} className="text-xs md:text-sm text-slate-600 leading-relaxed">{trimmed}</p>;
+      })}
+    </div>
+  );
+};
+
 export default function StudentDashboard({
   student,
   opportunities,
@@ -58,6 +135,11 @@ export default function StudentDashboard({
   const [attachedFile, setAttachedFile] = useState('');
   const [reportSuccess, setReportSuccess] = useState(false);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+
+  // AI report writer assistant states
+  const [isImproving, setIsImproving] = useState(false);
+  const [aiImprovedText, setAiImprovedText] = useState('');
+  const [aiError, setAiError] = useState('');
 
   // Chat conversation state
   const [chatPartnerId, setChatPartnerId] = useState<string>('');
@@ -152,8 +234,43 @@ export default function StudentDashboard({
     setTasks('');
     setChallenges('');
     setAttachedFile('');
+    setAiImprovedText('');
+    setAiError('');
     setReportSuccess(true);
     setTimeout(() => setReportSuccess(false), 4000);
+  };
+
+  // Improve report contents using Gemini AI (server API proxy)
+  const handleImproveReportWithAI = async () => {
+    if (!tasks && !challenges) return;
+    setIsImproving(true);
+    setAiImprovedText('');
+    setAiError('');
+
+    try {
+      const response = await fetch('/api/gemini/improve-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          completedTasks: tasks,
+          challenges: challenges
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'فشل تحسين التقرير بالذكاء الاصطناعي');
+      }
+
+      setAiImprovedText(data.improved);
+    } catch (err: any) {
+      console.error(err);
+      setAiError(err.message || 'حدث خطأ غير متوقع أثناء الاتصال بـ Gemini API');
+    } finally {
+      setIsImproving(false);
+    }
   };
 
   // Handle Send Chat Message action
@@ -764,7 +881,89 @@ export default function StudentDashboard({
                     ></textarea>
                   </div>
 
-                                   {reportSuccess && (
+                  {(tasks || challenges) && (
+                    <div className="bg-gradient-to-br from-indigo-50/90 via-slate-50/50 to-purple-50/90 border-2 border-indigo-100 shadow-sm rounded-xl p-4 md:p-5 space-y-4 text-right transition duration-150">
+                      <div className="flex flex-row-reverse justify-between items-center gap-3">
+                        <span className="text-xs font-extrabold text-indigo-950 flex items-center gap-1.5">
+                          <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse" />
+                          {lang === 'ar' ? 'مساعد الكتابة الذكي (Gemini)' : 'AI Writing Assistant (Gemini)'}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={handleImproveReportWithAI}
+                          disabled={isImproving}
+                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-indigo-400 disabled:to-slate-400 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-all duration-200 flex items-center gap-1.5 shadow-sm hover:shadow transform active:scale-95 cursor-pointer"
+                        >
+                          {isImproving ? (
+                            <>
+                              <span className="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                              {lang === 'ar' ? 'جاري تحسين الصياغة...' : 'Improving Draft...'}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              {lang === 'ar' ? 'تحسين صياغة التقرير بالذكاء الاصطناعي ✨' : 'Improve Report with AI ✨'}
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {aiError && (
+                        <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-150 text-right font-semibold shadow-xs">
+                          ⚠️ {aiError}
+                        </p>
+                      )}
+
+                      {aiImprovedText && (
+                        <div className="space-y-3">
+                          <div className="bg-white p-4 md:p-5 rounded-xl border border-indigo-100 text-right space-y-4 shadow-sm max-h-96 overflow-y-auto custom-scrollbar">
+                            <div className="border-b border-indigo-50 pb-2 mb-3 flex justify-between items-center">
+                              <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">
+                                {lang === 'ar' ? 'الصياغة الاحترافية المقترحة' : 'Suggested Professional Draft'}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                {lang === 'ar' ? 'صياغة أكاديمية بضغطة زر' : 'Academic phrasing in one click'}
+                              </span>
+                            </div>
+                            
+                            {renderFormattedAIResponse(aiImprovedText)}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(aiImprovedText);
+                              }}
+                              className="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer shadow-xs border border-slate-250 flex items-center justify-center gap-1.5"
+                            >
+                              <span>📋</span>
+                              {lang === 'ar' ? 'نسخ النص المحسن' : 'Copy Improved Text'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sections = aiImprovedText.split(/(?=\*\*المهام المنجزة|\*\*التحديات وكيفية)/i);
+                                if (sections.length >= 2) {
+                                  setTasks(sections[0].replace(/\*\*المهام المنجزة المصاغة باحترافية\*\*:\s*\n*/, '').trim());
+                                  setChallenges(sections[1].replace(/\*\*التحديات وكيفية التعامل معها\*\*:\s*\n*/, '').trim());
+                                } else {
+                                  setTasks(aiImprovedText);
+                                }
+                              }}
+                              className="w-1/2 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 text-indigo-950 font-extrabold py-2.5 rounded-xl text-xs transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                            >
+                              <span>⚡</span>
+                              {lang === 'ar' ? 'تطبيق الصياغة تلقائياً' : 'Apply Draft Automatically'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {reportSuccess && (
                     <div className="bg-indigo-50 text-indigo-950 text-xs p-3 rounded-lg flex items-center gap-2 border border-indigo-150">
                       <Sparkles className="h-4 w-4 text-indigo-600" />
                       <span>{lang === 'ar' ? 'تم تقديم تقرير الأسبوع بنجاح للمشرف الأكاديمي!' : 'Weekly report submitted to your supervisor successfully!'}</span>
