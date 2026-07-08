@@ -280,7 +280,7 @@ export default function LoginRegister({
       if (!isGazaPhone) {
         setErrorMsg(
           lang === 'ar'
-            ? 'يرجى إدخال رقم اتصال غزة/فلسطين صحيح ومؤلف من 10 أرقام (مثال جوال: 0599123456 أو 0569123456، أو أرضي: 0828XXXXX).'
+            ? 'يرجى إدخال رقم اتصال غزة/فلسطين/ صحيح ومؤلف من 10 أرقام (مثال جوال: 0599123456 أو 0569123456، أو أرضي: 0828XXXXX).'
             : 'Please enter a valid Gaza/Palestine contact number with 10 digits (e.g. mobile: 0599123456 or 0569123456, or landline: 0828XXXXX).'
         );
         return;
