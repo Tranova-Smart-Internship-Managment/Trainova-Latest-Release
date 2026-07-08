@@ -169,7 +169,7 @@ export default function StudentDashboard({
       });
     }
 
-    // 2. Add Training Provider where they are accepted
+    //  Add Training Provider where they are accepted
     const acceptedApplications = myApplications.filter(a => a.status === 'accepted');
     acceptedApplications.forEach(a => {
       const p = providers.find(prov => prov.id === a.providerId);
