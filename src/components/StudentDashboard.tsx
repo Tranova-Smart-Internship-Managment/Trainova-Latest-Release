@@ -169,7 +169,7 @@ export default function StudentDashboard({
       });
     }
 
-    // 2. Add Training Provider where they are accepted
+    //  Add Training Provider where they are accepted
     const acceptedApplications = myApplications.filter(a => a.status === 'accepted');
     acceptedApplications.forEach(a => {
       const p = providers.find(prov => prov.id === a.providerId);
@@ -1163,7 +1163,7 @@ export default function StudentDashboard({
                       {activeConversation.length === 0 ? (
                         <div className="text-center py-12 text-slate-400 text-xs">
                           <MessageSquare className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                          <p>{lang === 'ar' ? 'لا توجد رسائل سابقة في هذه القناة. ابدأ التراسل الآن.' : 'Send a friendly message to kickstart the discussion.'}</p>
+                          <p>{lang === 'ar' ? 'لا يوجد رسائل سابقة في هذه القناة. ابدأ التراسل الآن.' : 'Send a friendly message to kickstart the discussion.'}</p>
                         </div>
                       ) : (
                         activeConversation.map(msg => {

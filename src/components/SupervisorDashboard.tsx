@@ -71,7 +71,7 @@ export default function SupervisorDashboard({
   const getChatPartners = () => {
     const list: { id: string; name: string; roleLabel: string; role: any }[] = [];
     
-    // 1. Add their supervised students only
+    // . Add their supervised students only
     const supervisedStudents = students.filter(s => s.supervisorId === supervisor.id);
     supervisedStudents.forEach(s => {
       list.push({ 
@@ -82,7 +82,7 @@ export default function SupervisorDashboard({
       });
     });
 
-    // 2. Add Training Providers where their supervised students are accepted
+    // . Add Training Providers where their supervised students are accepted
     const supervisedStudentIds = supervisedStudents.map(s => s.id);
     const acceptedApplicationsOfMyStudents = applications.filter(
       a => supervisedStudentIds.includes(a.studentId) && a.status === 'accepted'
@@ -122,7 +122,7 @@ export default function SupervisorDashboard({
     }
   }, [activeConversation.length, activeChatPartner?.id, activeTab]);
 
-  // Handle Report Review
+  // Handle report review
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedReportId || !feedbackText) return;
